@@ -21,6 +21,10 @@ class WindowsXPGame {
     this._threejs.shadowMap.type = THREE.PCFSoftShadowMap;
     this._threejs.setPixelRatio(window.devicePixelRatio);
     this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._threejs.domElement.style.position = 'absolute';
+    this._threejs.domElement.style.top = '0';
+    this._threejs.domElement.style.left = '0';
+    this._threejs.domElement.style.zIndex = '0';
     document.body.appendChild(this._threejs.domElement);
 
     // Handle window resize
@@ -38,9 +42,11 @@ class WindowsXPGame {
     // Create scene
     this._scene = new THREE.Scene();
 
-    // XP Sky blue background
-    this._scene.background = new THREE.Color(0x5a8dce);
-    this._scene.fog = new THREE.Fog(0x5a8dce, 50, 200);
+    // Create XP Bliss skybox
+    this._CreateBlissSkybox();
+
+    // Add fog for distant hills
+    this._scene.fog = new THREE.Fog(0x5a8dce, 100, 300);
 
     // Lighting - bright and cheerful like XP
     const sunLight = new THREE.DirectionalLight(0xffffee, 1.2);
@@ -82,48 +88,104 @@ class WindowsXPGame {
     this._RAF();
   }
 
+  _CreateBlissSkybox() {
+    // Create a large sphere for the skybox with XP Bliss-inspired gradient
+    const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+
+    // Create gradient texture for XP Bliss sky
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Create XP Bliss sky gradient (bright blue at top, lighter at horizon)
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#4a9eff');    // Top - bright sky blue
+    gradient.addColorStop(0.4, '#78b4ff');  // Upper middle
+    gradient.addColorStop(0.7, '#a8d0ff');  // Lower middle - lighter blue
+    gradient.addColorStop(1, '#d4e8ff');    // Horizon - very light blue
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add some white wispy clouds to the texture
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    for (let i = 0; i < 20; i++) {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height * 0.6; // Upper part only
+      const radius = 20 + Math.random() * 40;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius, radius * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const skyMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.BackSide
+    });
+
+    const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+    this._scene.add(sky);
+  }
+
   _CreateBlissLandscape() {
-    // Create rolling hills geometry
-    const groundGeometry = new THREE.PlaneGeometry(200, 200, 50, 50);
+    // Create rolling hills geometry - more detailed for better Bliss effect
+    const groundGeometry = new THREE.PlaneGeometry(300, 300, 100, 100);
     const vertices = groundGeometry.attributes.position.array;
 
-    // Create rolling hills
+    // Create rolling hills like the Bliss wallpaper
     for (let i = 0; i < vertices.length; i += 3) {
       const x = vertices[i];
       const y = vertices[i + 1];
 
-      // Create wave patterns for hills
-      const wave1 = Math.sin(x * 0.05) * 3;
-      const wave2 = Math.cos(y * 0.05) * 3;
-      const wave3 = Math.sin(x * 0.02 + y * 0.02) * 2;
+      // Create smooth, rolling hills with multiple wave patterns
+      const wave1 = Math.sin(x * 0.015) * 8;
+      const wave2 = Math.cos(y * 0.015) * 8;
+      const wave3 = Math.sin((x + y) * 0.01) * 6;
+      const wave4 = Math.cos((x - y) * 0.008) * 5;
 
-      vertices[i + 2] = wave1 + wave2 + wave3;
+      // Add some variation to make it more natural
+      const distance = Math.sqrt(x * x + y * y);
+      const falloff = Math.max(0, 1 - distance / 150);
+
+      vertices[i + 2] = (wave1 + wave2 + wave3 + wave4) * falloff;
     }
 
     groundGeometry.computeVertexNormals();
 
-    // XP Bliss green grass
+    // XP Bliss vibrant green grass - more saturated and vibrant
     const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0x7ec850,
+      color: 0x6ec72d,  // Brighter, more vibrant green like Bliss
       flatShading: false,
-      roughness: 0.8,
-      metalness: 0.1
+      roughness: 0.85,
+      metalness: 0.05
     });
 
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
-    ground.position.y = -2;
+    ground.position.y = 0;
     this._scene.add(ground);
 
-    // Add some XP-style trees (simple geometric shapes)
+    // Add some XP-style trees scattered on hills
     for (let i = 0; i < 15; i++) {
       const tree = this._CreateTree();
       const angle = (i / 15) * Math.PI * 2;
-      const radius = 30 + Math.random() * 30;
-      tree.position.x = Math.cos(angle) * radius;
-      tree.position.z = Math.sin(angle) * radius;
-      tree.position.y = -2;
+      const radius = 30 + Math.random() * 40;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      tree.position.x = x;
+      tree.position.z = z;
+
+      // Calculate height based on terrain waves
+      const y = Math.sin(x * 0.015) * 8 + Math.cos(z * 0.015) * 8 +
+                Math.sin((x + z) * 0.01) * 6 + Math.cos((x - z) * 0.008) * 5;
+      const distance = Math.sqrt(x * x + z * z);
+      const falloff = Math.max(0, 1 - distance / 150);
+
+      tree.position.y = y * falloff;
       this._scene.add(tree);
     }
   }
@@ -205,7 +267,7 @@ class WindowsXPGame {
       playerGroup.add(cube);
     }
 
-    playerGroup.position.set(0, 2, 0);
+    playerGroup.position.set(0, 3, 0);
     this.player = playerGroup;
     this._scene.add(playerGroup);
   }
@@ -224,10 +286,16 @@ class WindowsXPGame {
       const gem = new THREE.Mesh(geometry, material);
 
       const angle = Math.random() * Math.PI * 2;
-      const radius = 10 + Math.random() * 35;
-      gem.position.x = Math.cos(angle) * radius;
-      gem.position.z = Math.sin(angle) * radius;
-      gem.position.y = 2 + Math.random() * 3;
+      const radius = 10 + Math.random() * 50;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      gem.position.x = x;
+      gem.position.z = z;
+
+      // Calculate terrain height at this position
+      const terrainHeight = this._GetTerrainHeight(x, z);
+      gem.position.y = terrainHeight + 2 + Math.random() * 2;
 
       gem.castShadow = true;
       gem.receiveShadow = true;
@@ -235,6 +303,19 @@ class WindowsXPGame {
       this._scene.add(gem);
       this.collectibles.push(gem);
     }
+  }
+
+  _GetTerrainHeight(x, z) {
+    // Calculate terrain height based on the same wave patterns used for terrain
+    const wave1 = Math.sin(x * 0.015) * 8;
+    const wave2 = Math.cos(z * 0.015) * 8;
+    const wave3 = Math.sin((x + z) * 0.01) * 6;
+    const wave4 = Math.cos((x - z) * 0.008) * 5;
+
+    const distance = Math.sqrt(x * x + z * z);
+    const falloff = Math.max(0, 1 - distance / 150);
+
+    return (wave1 + wave2 + wave3 + wave4) * falloff;
   }
 
   _SetupControls() {
@@ -291,10 +372,9 @@ class WindowsXPGame {
       this.player.rotation.y += 0.05;
     }
 
-    // Keep player above ground
-    if (this.player.position.y < 0) {
-      this.player.position.y = 0;
-    }
+    // Keep player on terrain surface
+    const terrainHeight = this._GetTerrainHeight(this.player.position.x, this.player.position.z);
+    this.player.position.y = terrainHeight + 3;
 
     // Update camera to follow player
     this.controls.target.copy(this.player.position);
@@ -339,10 +419,16 @@ class WindowsXPGame {
     const gem = new THREE.Mesh(geometry, material);
 
     const angle = Math.random() * Math.PI * 2;
-    const radius = 15 + Math.random() * 40;
-    gem.position.x = Math.cos(angle) * radius;
-    gem.position.z = Math.sin(angle) * radius;
-    gem.position.y = 2 + Math.random() * 3;
+    const radius = 15 + Math.random() * 50;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+
+    gem.position.x = x;
+    gem.position.z = z;
+
+    // Calculate terrain height at this position
+    const terrainHeight = this._GetTerrainHeight(x, z);
+    gem.position.y = terrainHeight + 2 + Math.random() * 2;
 
     gem.castShadow = true;
     gem.receiveShadow = true;
