@@ -1,12 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Basic 3D World</title>
+  <title>Windows XP 3D Adventure</title>
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <link rel="stylesheet" type="text/css" href="base.css">
 </head>
 <body>
-  <script src="./main.js" type="module">
-  </script>
+  <div id="xp-taskbar">
+    <div class="start-button">
+      <span class="start-icon">🪟</span>
+      <span class="start-text">start</span>
+    </div>
+    <div class="taskbar-items">
+      <div class="taskbar-item active">
+        <span>🎮 XP Adventure</span>
+      </div>
+    </div>
+    <div class="system-tray">
+      <span id="score">Score: 0</span>
+      <span class="time" id="time">12:00 PM</span>
+    </div>
+  </div>
+
+  <div id="instructions" class="xp-window">
+    <div class="xp-window-title">
+      <span>🎮 Welcome to Windows XP 3D Adventure</span>
+      <button class="close-btn" onclick="document.getElementById('instructions').style.display='none'">×</button>
+    </div>
+    <div class="xp-window-content">
+      <h3>How to Play:</h3>
+      <p>🖱️ <strong>Mouse:</strong> Click and drag to look around</p>
+      <p>⌨️ <strong>WASD:</strong> Move around the XP world</p>
+      <p>🎯 <strong>Goal:</strong> Collect the blue XP gems!</p>
+      <p>🌄 Explore the nostalgic Bliss landscape</p>
+      <button class="xp-button" onclick="document.getElementById('instructions').style.display='none'">Start Playing!</button>
+    </div>
+  </div>
+
+  <script src="./main.js" type="module"></script>
 </body>
 </html>
