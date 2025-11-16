@@ -132,7 +132,7 @@ class WindowsXPGame {
   _CreateBlissLandscape() {
     // Create rolling hills geometry - more detailed for better Bliss effect
     const groundGeometry = new THREE.PlaneGeometry(300, 300, 100, 100);
-    const vertices = groundGeometry.attributes.position.array;
+    const vertices = groundGeometry.getAttribute('position').array;
 
     // Create rolling hills like the Bliss wallpaper
     for (let i = 0; i < vertices.length; i += 3) {
